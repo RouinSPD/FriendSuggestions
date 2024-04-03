@@ -68,18 +68,23 @@ class SocialGraph {
                 }
             }
         }
-        
-        // Sort the suggestions based on Jaccard similarity scores in descending order.
-        let sortedSuggestions = suggestions.sorted { $0.value.jaccardSimilarity > $1.value.jaccardSimilarity }
-                                           .map { ($0.key, $0.value.jaccardSimilarity, $0.value.mutualFriendsCount) }
-        
-        // Print detailed suggestions including friend ID, Jaccard similarity, and mutual friends count.
-        print("Suggested friends for \(user.name):")
-        sortedSuggestions.forEach { friendId, score, mutualFriendsCount in
-            print("\(friendId) - Mutual friends Score: \(score), Mutual Friends: \(mutualFriendsCount)")
+        if suggestions.count == 0{
+            print("No suggestions for \(user.name) for the moment. No mutual friends with other user.")
+            return []
         }
-        
-        return sortedSuggestions
+        // Sort the suggestions based on Jaccard similarity scores in descending order.
+        else {
+            let sortedSuggestions = suggestions.sorted { $0.value.jaccardSimilarity > $1.value.jaccardSimilarity }
+                .map { ($0.key, $0.value.jaccardSimilarity, $0.value.mutualFriendsCount) }
+            
+            // Print detailed suggestions including friend ID, Jaccard similarity, and mutual friends count.
+            print("Suggested friends for \(user.name):")
+            sortedSuggestions.forEach { friendId, score, mutualFriendsCount in
+                print("\(friendId) - Mutual friends Score: \(score), Mutual Friends: \(mutualFriendsCount)")
+            }
+            
+            return sortedSuggestions
+        }
     }
 }
 
@@ -131,5 +136,6 @@ socialGraph.addFriendship(between: "Pedro", and: "Pau")
 socialGraph.addFriendship(between: "Pedro", and: "Aldo")
 // Get and print friend suggestions for Alice
 socialGraph.suggestFriends(for: "Alice")
+socialGraph.suggestFriends(for: "Pedro")
 
 
