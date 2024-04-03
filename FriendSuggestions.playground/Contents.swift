@@ -1,101 +1,108 @@
 import Foundation
 
-// Represents a user in the social network.
+// Represents an individual within the social network, capable of friendships and visiting other profiles.
 class User {
-    let id: String // Unique identifier for the user.
-    let name: String // Name of the user.
-    var friends: [User] // List of direct friends, represented as User objects.
-    var visitedProfiles: [String] // IDs of profiles this user has visited.
-    
-    // Initializes a new User object.
-    init(id: String, name: String, friends: [User] = [], visitedProfiles: [String] = []) {
+    let id: String // A unique identifier for the user, such as a username.
+    let name: String // The user's full name.
+    var friends: [User] // A dynamic list of this user's friends, represented by User objects.
+    var visitedProfiles: [String: Int] // A dictionary mapping the IDs of visited user profiles to the number of visits.
+
+    // Constructor for creating a new User object.
+    init(id: String, name: String, friends: [User] = [], visitedProfiles: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.friends = friends
         self.visitedProfiles = visitedProfiles
     }
-    
-    // Adds a friend to this user's list of friends, avoiding duplicates.
+
+    // Adds a new friend to the user's friends list, ensuring there are no duplicate entries.
     func addFriend(_ friend: User) {
         if !self.friends.contains(where: { $0.id == friend.id }) {
             self.friends.append(friend)
         }
     }
+
+    // Records a visit to another user's profile, incrementing the visit count in the visitedProfiles dictionary.
+    func visitProfile(of user: User) {
+        visitedProfiles[user.id, default: 0] += 1
+    }
 }
 
-// Manages the social graph, including users and their relationships.
+// Manages the overall social network, including users and their relationships.
 class SocialGraph {
-    private var users: [String: User] = [:] // Dictionary mapping user IDs to User objects for quick lookup.
-    
-    // Adds a user to the social graph.
+    private var users: [String: User] = [:] // A collection of all users in the network, keyed by their unique IDs.
+
+    // Introduces a new user into the social graph.
     func addUser(_ user: User) {
         users[user.id] = user
     }
-    
-    // Establishes a bidirectional friendship between two users by their IDs.
+
+    // Establishes a mutual friendship between two specified users.
     func addFriendship(between user1Id: String, and user2Id: String) {
         guard let user1 = users[user1Id], let user2 = users[user2Id] else { return }
         
         user1.addFriend(user2)
         user2.addFriend(user1)
     }
-    
-    // Suggests potential friends for a user by calculating the Jaccard similarity
-    // and considering mutual friends.
-    func suggestFriends(for userId: String) -> [(friendId: String, jaccardSimilarity: Double, mutualFriendsCount: Int)] {
+
+    // Calculates the Jaccard similarity between two users based on their friends.
+    private func jaccardSimilarity(for user: User, and friendOfFriend: User) -> Double {
+        let userFriendsSet = Set(user.friends.map { $0.id })
+        let friendOfFriendSet = Set(friendOfFriend.friends.map { $0.id })
+        let intersection = userFriendsSet.intersection(friendOfFriendSet).count
+        let union = userFriendsSet.union(friendOfFriendSet).count
+        return union == 0 ? 0 : Double(intersection) / Double(union)
+    }
+
+    // Determines the total number of profile visits between two users, accounting for visits in both directions.
+    private func bidirectionalVisitCount(user: User, friendOfFriend: User) -> Int {
+        let visitsToFriendOfFriend = user.visitedProfiles[friendOfFriend.id, default: 0]
+        let visitsFromFriendOfFriend = friendOfFriend.visitedProfiles[user.id, default: 0]
+        return visitsToFriendOfFriend + visitsFromFriendOfFriend
+    }
+
+    // Generates friend suggestions for a given user, ranked by Jaccard similarity and enhanced with visit data.
+    func suggestFriends(for userId: String) -> [(friendId: String, jaccardSimilarity: Double, mutualFriendsCount: Int, visitsCount: Int)] {
         guard let user = users[userId] else { return [] }
-        
-        var suggestions: [String: (jaccardSimilarity: Double, mutualFriendsCount: Int)] = [:]
-        
-        // Convert user's direct friends list to a set of IDs for easier comparison.
-        let directFriends = Set(user.friends.map { $0.id })
-        
-        // Iterate over each direct friend of the user.
+        var suggestions = [String: (jaccardSimilarity: Double, mutualFriendsCount: Int, visitsCount: Int)]()
+
         user.friends.forEach { friend in
-            // Then, iterate over each friend of those direct friends (potential friends).
             friend.friends.forEach { friendOfFriend in
-                // Check if the potential friend is not the user and not already a direct friend.
-                if friendOfFriend.id != userId && !directFriends.contains(friendOfFriend.id) {
-                    let friendOfFriendSet = Set(friendOfFriend.friends.map { $0.id })
-                    let intersection = directFriends.intersection(friendOfFriendSet).count
-                    let union = directFriends.union(friendOfFriendSet).count
-                    let jaccardSimilarity = Double(intersection) / Double(union)
-                    
-                    // Round the Jaccard similarity to 2 decimal places.
-                    let roundedJaccardSimilarity = (jaccardSimilarity * 100).rounded() / 100
-                    
-                    suggestions[friendOfFriend.id] = (roundedJaccardSimilarity, intersection)
+                // Exclude the user and their current friends from suggestions.
+                if friendOfFriend.id != userId && !user.friends.contains(where: { $0.id == friendOfFriend.id }) {
+                    let jaccardScore = (jaccardSimilarity(for: user, and: friendOfFriend)*100).rounded()/100
+                    let visitCount = bidirectionalVisitCount(user: user, friendOfFriend: friendOfFriend)
+                    let mutualFriendsCount = Set(user.friends.map { $0.id })
+                        .intersection(Set(friendOfFriend.friends.map { $0.id })).count
+                    suggestions[friendOfFriend.id] = (jaccardScore, mutualFriendsCount, visitCount)
                 }
             }
         }
-        if suggestions.count == 0{
-            print("No suggestions for \(user.name) for the moment. No mutual friends with other user.")
-            return []
+
+        // Sort suggestions by Jaccard similarity score (primary) and visit count (secondary).
+        let sortedSuggestions = suggestions.sorted {
+            $0.value.jaccardSimilarity > $1.value.jaccardSimilarity ||
+            ($0.value.jaccardSimilarity == $1.value.jaccardSimilarity && $0.value.visitsCount > $1.value.visitsCount)
+        }.map { ($0.key, $0.value.jaccardSimilarity, $0.value.mutualFriendsCount, $0.value.visitsCount) }
+        
+        // Output the sorted list of suggestions with detailed metrics.
+        print("Suggested friends for \(user.name):")
+        sortedSuggestions.forEach { friendId, score, mutualFriends, visits in
+            print("\(friendId) - Jaccard Similarity: \(score), Mutual Friends: \(mutualFriends), Profile Visits: \(visits)")
         }
-        // Sort the suggestions based on Jaccard similarity scores in descending order.
-        else {
-            let sortedSuggestions = suggestions.sorted { $0.value.jaccardSimilarity > $1.value.jaccardSimilarity }
-                .map { ($0.key, $0.value.jaccardSimilarity, $0.value.mutualFriendsCount) }
-            
-            // Print detailed suggestions including friend ID, Jaccard similarity, and mutual friends count.
-            print("Suggested friends for \(user.name):")
-            sortedSuggestions.forEach { friendId, score, mutualFriendsCount in
-                print("\(friendId) - Mutual friends Score: \(score), Mutual Friends: \(mutualFriendsCount)")
-            }
-            
-            return sortedSuggestions
-        }
+        
+        return sortedSuggestions
+    }
+
+    // Records a profile visit from one user (visitor) to another (visited).
+    func recordVisit(from visitorId: String, to visitedId: String) {
+        guard let visitor = users[visitorId], let visited = users[visitedId] else { return }
+        visitor.visitProfile(of: visited)
     }
 }
 
-// The setup for creating users and friendships, and then getting suggestions, is similar to previous examples.
-
-
 // Example setup and usage
-// Assume user creation and friendship establishment are done similarly to previous examples
 
-
-// Example Usage:
 let socialGraph = SocialGraph()
 
 // Create user instances
@@ -128,14 +135,25 @@ socialGraph.addFriendship(between: "Bob", and: "Charlie")
 socialGraph.addFriendship(between: "Alice", and: "Charlie")
 socialGraph.addFriendship(between: "Alice", and: "David")
 socialGraph.addFriendship(between: "David", and: "Eve")
+socialGraph.addFriendship(between: "Eve", and: "Bob")
+socialGraph.addFriendship(between: "Eve", and: "Charlie")
 socialGraph.addFriendship(between: "Bob", and: "Diego")
-socialGraph.addFriendship(between: "Diego", and: "Charlie")
+//socialGraph.addFriendship(between: "Diego", and: "Charlie")
 socialGraph.addFriendship(between: "Diego", and: "David")
 socialGraph.addFriendship(between: "Pedro", and: "Pablo")
 socialGraph.addFriendship(between: "Pedro", and: "Pau")
 socialGraph.addFriendship(between: "Pedro", and: "Aldo")
-// Get and print friend suggestions for Alice
-socialGraph.suggestFriends(for: "Alice")
-socialGraph.suggestFriends(for: "Pedro")
 
+// Record some profile visits.
+socialGraph.recordVisit(from: "Alice", to: "Bob")
+socialGraph.recordVisit(from: "Alice", to: "Charlie")
+socialGraph.recordVisit(from: "Bob", to: "Alice")
+socialGraph.recordVisit(from: "Eve", to: "Alice")
+socialGraph.recordVisit(from: "Alice", to: "Diego")
+socialGraph.recordVisit(from: "Alice", to: "Eve")
+socialGraph.recordVisit(from: "Diego", to: "Alice")
+// Get and print friend suggestions for a user
+socialGraph.suggestFriends(for: "Alice")
+//socialGraph.suggestFriends(for: "Pedro")
+//let jaccardScore = (jaccardSimilarity(for: user, and: friendOfFriend)*100).rounded()/100
 
