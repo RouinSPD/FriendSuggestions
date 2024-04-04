@@ -121,6 +121,7 @@ class SocialGraph {
 
 
 // Example setup and usage
+//In a real scenario this data would be fetched 
 
 let socialGraph = SocialGraph()
 
