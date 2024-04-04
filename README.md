@@ -31,12 +31,5 @@ The choice to use dictionaries for managing users and visited profiles is pivota
 
 Inspiration from KNN and Real-World Applications
 
-The method for suggesting friends in SocialGraph draws inspiration from the k-nearest neighbors (KNN) algorithm, particularly in how potential friends are ranked based on a composite score reflecting similarity and interaction. While not implementing KNN in its traditional form, SocialGraph embodies the spirit of KNN through its emphasis on:
+The method for suggesting friends in SocialGraph draws inspiration from the k-nearest neighbors (KNN) algorithm, particularly in how potential friends are ranked based on a composite score reflecting similarity and interaction. While not implementing KNN in its traditional form, SocialGraph embodies the spirit of KNN through its emphasis on: feature representation such as mutual friends and interaction counts, akin to feature vectors in KNN, score functions similarly to distance metrics in KNN, top-N selection.
 
-Feature Representation: Users are characterized by features such as mutual friends and interaction counts, akin to feature vectors in KNN.
-
-"Distance" Measurement: The combined score functions similarly to distance metrics in KNN, determining the closeness between users based on multiple dimensions of data.
-
-Top-N Selection: Like selecting the k-nearest neighbors in KNN, SocialGraph selects the top suggestions based on the calculated scores.
-
-This approach mirrors actual friend suggestion algorithms, which leverage vast datasets and complex metrics, including social connectivity, user interactions, and shared interests, to curate meaningful connections within the social network.
