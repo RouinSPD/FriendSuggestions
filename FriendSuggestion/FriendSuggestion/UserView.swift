@@ -18,7 +18,7 @@ struct UserView: View {
             Text("Friends: \(user.friends.map { $0.name }.joined(separator: ", "))")
                 .font(.subheadline)
 
-            // Allow adding a new friendship
+            // Allow simulating visits to othe user's profile
             Text("Simulate a visit to user's profile:")
                 .font(.subheadline)
             HStack{
@@ -30,7 +30,7 @@ struct UserView: View {
                             viewModel.recordVisit(from: user.id, to: otherUser.id)
                         }
                         .padding(4)
-                        .background(Color.blue)
+                        .background(Color.mint)
                         .foregroundColor(.white)
                         .cornerRadius(5)
                     }

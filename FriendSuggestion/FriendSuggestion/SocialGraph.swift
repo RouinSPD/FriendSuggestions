@@ -14,7 +14,7 @@ class SocialGraph {
         users[user.id] = user
     }
 
-    // Forms a mutual friendship between two users, symbolizing a bidirectional relationship.
+    // Forms a mutual friendship between two users, representing a bidirectional relationship.
     func addFriendship(between user1Id: String, and user2Id: String) {
         guard let user1 = users[user1Id], let user2 = users[user2Id] else { return }
         user1.addFriend(user2)

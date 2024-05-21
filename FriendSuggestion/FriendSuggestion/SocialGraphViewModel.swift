@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Foundation
-// Assuming User and SocialGraph classes are already defined
+
 
 class SocialGraphViewModel: ObservableObject {
     @Published var users = [User]()
