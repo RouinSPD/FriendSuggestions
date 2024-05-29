@@ -24,13 +24,17 @@ class User {
     }
 
     // Adds a friend to this user's list if not already present, preventing duplicates.
+    // check the array of friends of the user and appends the second user in the array of friends if the id is not already the idea pf a user contained in the array of friends of type User 
     func addFriend(_ friend: User) {
         if !self.friends.contains(where: { $0.id == friend.id }) {
             self.friends.append(friend)
         }
     }
 
-    // Increments the visit count for a given user's profile, enhancing interaction tracking.
+    // Increments the visit count for a given user's profile, checks for another kind of interaction
+    // if there is a key corresponding to the user's profile who is visited it will increment the value of that by 1
+    // if there is not a key there (this profile has not been visited before by the user who calls the function),
+    //the key is added to the dictionary, it starts with cero as the default value and increments by 1 
     func visitProfile(of user: User) {
         visitedProfiles[user.id, default: 0] += 1
     }

@@ -27,19 +27,29 @@ class SocialGraph {
         visitor.visitProfile(of: visited)
     }
 
-    // Calculates Jaccard similarity between two users based on their friends, measuring the overlap in their social circles.
+    // Calculates Jaccard similarity between two users based on their friends
+    //This coefficient measures how similar the two users are in terms of their friendships
+    //which is useful for features like friend suggestions
     private func jaccardSimilarity(for user: User, and friendOfFriend: User) -> Double {
         let userFriendsSet = Set(user.friends.map { $0.id })
         let friendOfFriendSet = Set(friendOfFriend.friends.map { $0.id })
+        //obtain number of friends in common
         let intersection = userFriendsSet.intersection(friendOfFriendSet).count
+        //obatin total number of combined friends
         let union = userFriendsSet.union(friendOfFriendSet).count
+        //normalize so the value is between 0 and 1
         return union == 0 ? 0 : Double(intersection) / Double(union)
     }
 
     // Computes the total visits between two users, considering both directions to account for mutual interest.
     private func bidirectionalVisitCount(user: User, friendOfFriend: User) -> Int {
+        // Retrieves the number of times 'user' has visited 'friendOfFriend's profile
+        // If no visits are recorded, it defaults to 0
         let visitsToFriendOfFriend = user.visitedProfiles[friendOfFriend.id, default: 0]
+        // Retrieves the number of times 'friendOfFriend' has visited 'user's profile
+        // If no visits are recorded, it defaults to 0
         let visitsFromFriendOfFriend = friendOfFriend.visitedProfiles[user.id, default: 0]
+        // Sums the visits in both directions to get the total bidirectional visit count
         return visitsToFriendOfFriend + visitsFromFriendOfFriend
     }
 
